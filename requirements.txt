@@ -1,0 +1,11 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.1
+Flask-Login==0.6.3
+WTForms==3.1.2
+Werkzeug==3.0.2
+Jinja2==3.1.4
+itsdangerous==2.2.0
+MarkupSafe==2.1.5
+click==8.1.7
+chart.js==2.9.4   # Optional: if you use chart visualizations
