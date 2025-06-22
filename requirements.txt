@@ -9,3 +9,4 @@ itsdangerous==2.2.0
 MarkupSafe==2.1.5
 click==8.1.7
 chart.js==2.9.4   # Optional: if you use chart visualizations
+# python-dotenv
