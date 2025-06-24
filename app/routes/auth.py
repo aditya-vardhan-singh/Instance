@@ -6,6 +6,12 @@ from app.models.user import User
 import re
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
+
+# python
+# web dev - overview (manager) functionality
+# 
+
+
 # ---------------------
 # Route: Login
 # ---------------------

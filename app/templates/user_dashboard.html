@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>User Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+  <div class="container mt-5">
+    <h2 class="mb-4">User Dashboard</h2>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="row g-4">
+      <!-- Book Parking Spot -->
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Book a Parking Spot</h5>
+            <form method="POST" action="{{ url_for('user.book_spot') }}">
+              <button type="submit" class="btn btn-primary w-100">Book Now</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- View Available Spots -->
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Available Parking Spots</h5>
+            <ul class="list-group list-group-flush">
+              {% for spot in available_spots %}
+                <li class="list-group-item">Spot {{ spot.number }} (Level {{ spot.level }})</li>
+              {% else %}
+                <li class="list-group-item text-muted">No spots available</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Status -->
+      <div class="col-md-4">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title">Current Status</h5>
+            {% if current_booking %}
+              <p><strong>Spot:</strong> {{ current_booking.spot_number }}</p>
+              <p><strong>Start Time:</strong> {{ current_booking.start_time }}</p>
+            {% else %}
+              <p class="text-muted">No active booking</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Booking History -->
+    <div class="mt-5">
+      <h4>Booking History</h4>
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead class="table-dark">
+            <tr>
+              <th>Spot Number</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for booking in booking_history %}
+              <tr>
+                <td>{{ booking.spot_number }}</td>
+                <td>{{ booking.start_time }}</td>
+                <td>{{ booking.end_time or 'Ongoing' }}</td>
+              </tr>
+            {% else %}
+              <tr>
+                <td colspan="3" class="text-muted text-center">No past bookings</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Release Spot -->
+    {% if current_booking %}
+      <div class="mt-4">
+        <form method="POST" action="{{ url_for('user.release_spot') }}">
+          <button type="submit" class="btn btn-danger">Release Spot</button>
+        </form>
+      </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
