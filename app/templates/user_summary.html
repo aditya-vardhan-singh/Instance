@@ -1,0 +1,33 @@
+<!-- templates/user_summary.html -->
+{% extends "user_base.html" %}
+
+{% block content %}
+<h4>Your Parking Summary</h4>
+<canvas id="parkingChart" width="600" height="300" class="mt-4"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('parkingChart').getContext('2d');
+  const parkingChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ chart_labels|tojson }},
+      datasets: [{
+        label: 'Hours Parked per Day',
+        data: {{ chart_data|tojson }},
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>
+{% endblock %}
