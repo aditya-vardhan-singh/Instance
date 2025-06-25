@@ -1,0 +1,144 @@
+{% extends "user_base.html" %}
+
+{% block content %}
+<h3>Welcome, {{ user.name }}!</h3>
+
+<!-- Parking History -->
+<h5 class="mt-4">Your Parking History</h5>
+<table class="table table-bordered mt-2">
+  <thead class="table-dark">
+    <tr>
+      <th>ID</th>
+      <th>Location</th>
+      <th>Vehicle No.</th>
+      <th>Timestamp</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+   {% for record in history %}
+<tr>
+  <td>{{ record.id }}</td>
+  <td>{{ record.lot.location }}</td>
+  <td>{{ record.vehicle_no }}</td>
+  <td>{{ record.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+  <td>
+    {% if record.status == 'parked' %}
+    <button
+      class="btn btn-warning btn-sm"
+      data-bs-toggle="modal"
+      data-bs-target="#releaseModal"
+      data-id="{{ record.id }}"
+      data-spot="{{ record.spot_id }}"
+      data-vehicle="{{ record.vehicle_no }}"
+      data-start="{{ record.start_time.strftime('%Y-%m-%d %H:%M:%S') }}"
+      data-cost="{{ record.charge or 'To be calculated' }}"
+    >
+      Release
+    </button>
+    {% else %}
+    <span class="badge bg-success">Parked Out</span>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+  </tbody>
+</table>
+
+<!-- Search Parking Section -->
+<h5 class="mt-5">Search Parking</h5>
+<form method="GET" action="{{ url_for('user.search_parking') }}" class="row g-2">
+  <div class="col-md-6">
+    <input type="text" class="form-control" name="location" placeholder="Enter location" required>
+  </div>
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-primary">Search</button>
+  </div>
+</form>
+
+{% if parking_lots %}
+<h6 class="mt-4">Available Parking at "{{ search_location }}":</h6>
+<table class="table table-sm table-striped">
+  <thead>
+    <tr>
+      <th>Lot</th>
+      <th>Available Spots</th>
+      <th>Rate/hr</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for lot in parking_lots %}
+    <tr>
+      <td>{{ lot.name }}</td>
+      <td>{{ lot.available_spots }}</td>
+      <td>₹{{ lot.rate }}</td>
+      <td>
+        <!-- Replace link with modal trigger button -->
+        <button
+          class="btn btn-success btn-sm"
+          data-bs-toggle="modal"
+          data-bs-target="#bookModal"
+          data-lot="{{ lot.id }}"
+          data-lotname="{{ lot.name }}"
+          data-user="{{ user.id }}"
+        >
+          Book Now
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+
+<!-- Release Modal -->
+<div class="modal fade" id="releaseModal" tabindex="-1" aria-labelledby="releaseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" id="releaseForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="releaseModalLabel">Release Parking Spot</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p><strong>Spot ID:</strong> <span id="modalSpot"></span></p>
+          <p><strong>Vehicle No:</strong> <span id="modalVehicle"></span></p>
+          <p><strong>Start Time:</strong> <span id="modalStart"></span></p>
+          <p><strong>Release Time:</strong> <span id="modalNow"></span></p>
+          <p><strong>Total Cost:</strong> <span id="modalCost"></span></p>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-danger">Release</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- JS Script for populating modal -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const releaseModal = document.getElementById('releaseModal');
+    releaseModal.addEventListener('show.bs.modal', function (event) {
+      const button = event.relatedTarget;
+      const recordId = button.getAttribute('data-id');
+      const spotId = button.getAttribute('data-spot');
+      const vehicleNo = button.getAttribute('data-vehicle');
+      const startTime = button.getAttribute('data-start');
+      const cost = button.getAttribute('data-cost');
+
+      document.getElementById('modalSpot').textContent = spotId;
+      document.getElementById('modalVehicle').textContent = vehicleNo;
+      document.getElementById('modalStart').textContent = startTime;
+      document.getElementById('modalNow').textContent = new Date().toLocaleString();
+      document.getElementById('modalCost').textContent = cost;
+
+      document.getElementById('releaseForm').action = `/user/release/${recordId}`;
+    });
+  });
+</script>
+
+{% endblock %}

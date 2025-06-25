@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Add Parking Lot</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-5">
+    <h2>Add New Parking Lot</h2>
+    <form method="POST" action="{{ url_for('admin.add_lot') }}">
+      <div class="mb-3">
+        <label class="form-label">Lot Name</label>
+        <input type="text" name="name" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Location</label>
+        <input type="text" name="location" class="form-control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Number of Spots</label>
+        <input type="number" name="num_spots" class="form-control" required min="1">
+      </div>
+      <button type="submit" class="btn btn-success">Create Lot</button>
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+  </div>
+</body>
+</html>

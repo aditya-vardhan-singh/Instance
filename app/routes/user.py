@@ -1,38 +1,119 @@
-# app/routes/user.py
-
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session, redirect, url_for, request, flash
+from datetime import datetime
+from app.models import User, ParkingLot, ParkingSpot, ParkingRecord
+from app import db
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
-@user_bp.route('/')
-def user_dashboard():
-    # fetch these data from database
-    available_spots = [
-        {"number": 7, "level": 0},
-        {"number": 32, "level": 5},
-        {"number": 53, "level": 7},
-        {"number": 54, "level": 7},
-        {"number": 55, "level": 7}
-    ]
-    current_booking = {"spot_number": "04", "start_time": "12:32 PM"}
-    booking_history = [
-        {"spot_number":"04", "start_time": "12:32 PM", "end_time": "01:45 PM"},
-        {"spot_number":"43", "start_time": "2:30 PM", "end_time": "01:40 PM"},
-        {"spot_number":"12", "start_time": "12:15 PM", "end_time": "01:32 PM"}
-    ]
+
+@user_bp.route('/dashboard')
+def dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
     
-    return render_template(
-        'user_dashboard.html',
-        available_spots=available_spots,        # list of dicts or objects with `.number`, `.level`
-        current_booking=current_booking,        # object or None with `.spot_number`, `.start_time`
-        booking_history=booking_history         # list of bookings with `.spot_number`, `.start_time`, `.end_time`
+    user = User.query.get(session['user_id'])
+    history = ParkingRecord.query.filter_by(user_id=user.id).order_by(ParkingRecord.start_time.desc()).all()
+
+    return render_template('user_home.html', user=user, history=history, parking_lots=None)
+
+
+@user_bp.route('/search')
+def search_parking():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    location = request.args.get('location')
+    user = User.query.get(session['user_id'])
+    history = ParkingRecord.query.filter_by(user_id=user.id).order_by(ParkingRecord.start_time.desc()).all()
+    
+    parking_lots = ParkingLot.query.filter(ParkingLot.location.ilike(f'%{location}%')).all()
+
+    return render_template('user_home.html', user=user, history=history, parking_lots=parking_lots, search_location=location)
+
+
+
+@user_bp.route('/book/<int:lot_id>', methods=['POST'])
+def book_spot(lot_id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    lot = ParkingLot.query.get_or_404(lot_id)
+    spot = ParkingSpot.query.filter_by(lot_id=lot.id, is_available=True).first()
+
+    if not spot:
+        flash('No spots available in this lot.', 'warning')
+        return redirect(url_for('user.dashboard'))
+
+    vehicle_no = request.form.get('vehicle_no')
+
+    if not vehicle_no:
+        flash('Vehicle number is required.', 'danger')
+        return redirect(url_for('user.dashboard'))
+
+    spot.is_available = False
+
+    new_record = ParkingRecord(
+        user_id=session['user_id'],
+        lot_id=lot.id,
+        spot_id=spot.id,
+        vehicle_no=vehicle_no,
+        start_time=datetime.utcnow(),
+        status='parked'
     )
 
+    db.session.add(new_record)
+    db.session.commit()
 
-@user_bp.route('/user/bookspot')
-def user_bookspot():
-    return render_template("<h1>Booking spot for parking</h1>")
+    flash('Spot booked successfully!', 'success')
+    return redirect(url_for('user.dashboard'))
 
-@user_bp.route('/user/release-spot')
-def release_spot():
-    return render_template("<h1>Releasing booked spot</h1>")
+
+
+@user_bp.route('/release/<int:id>')
+def release_spot(id):
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+    
+    record = ParkingRecord.query.get_or_404(id)
+
+    if record.status != 'parked':
+        flash('This spot is already released.', 'info')
+        return redirect(url_for('user.dashboard'))
+
+    record.end_time = datetime.utcnow()
+    record.status = 'released'
+
+    # Mark the spot as available again
+    spot = ParkingSpot.query.get(record.spot_id)
+    spot.is_available = True
+
+    # Calculate charge (for demo purposes, ₹10 per hour)
+    duration_hours = max((record.end_time - record.start_time).total_seconds() / 3600, 1)
+    record.charge = round(duration_hours * spot.rate_per_hour, 2)
+
+    db.session.commit()
+
+    flash(f'Spot released. Charge: ₹{record.charge}', 'success')
+    return redirect(url_for('user.dashboard'))
+
+
+@user_bp.route('/summary')
+def summary():
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+
+    user_id = session['user_id']
+    records = ParkingRecord.query.filter_by(user_id=user_id).all()
+
+    # Build chart data: hours parked per day
+    daily_data = {}
+    for rec in records:
+        if rec.status == 'released' and rec.start_time and rec.end_time:
+            day = rec.start_time.date().isoformat()
+            duration = (rec.end_time - rec.start_time).total_seconds() / 3600
+            daily_data[day] = daily_data.get(day, 0) + round(duration, 2)
+
+    chart_labels = list(daily_data.keys())
+    chart_data = list(daily_data.values())
+
+    return render_template('user_summary.html', chart_labels=chart_labels, chart_data=chart_data)

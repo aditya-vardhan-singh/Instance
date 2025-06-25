@@ -5,9 +5,11 @@ from app import db
 class ParkingSpot(db.Model):
     __tablename__ = 'parking_spot'
 
-    spot_id = db.Column(db.Integer, primary_key=True)
-    lot_id = db.Column(db.Integer, db.ForeignKey('parking_lot.lot_id'), nullable=False)
-    status = db.Column(db.String(1), default='A', nullable=False)  # A = Available, O = Occupied
+    id = db.Column(db.Integer, primary_key=True)
+    lot_id = db.Column(db.Integer, db.ForeignKey('parking_lot.id'), nullable=False)
+    spot_number = db.Column(db.String(20))
+    is_available = db.Column(db.Boolean, default=True)
+    rate_per_hour = db.Column(db.Float, default=10.0)
 
     # One-to-one with reservation (optional)
     reservation = db.relationship('Reservation', backref='spot', uselist=False)
