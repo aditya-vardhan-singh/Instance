@@ -34,13 +34,13 @@ def login():
         user = User.query.filter_by(email=email).first()
 
         if user and user.check_password(password):
-            session['user_id'] = user.user_id
+            session['user_id'] = user.id
             session['role'] = user.role
 
             if user.role == 'admin':
                 return redirect(url_for('admin.admin_dashboard'))  # You need to define this route
             else:
-                return redirect(url_for('user.user_dashboard'))
+                return redirect(url_for('user.dashboard'))
 
         flash('Incorrect email or password!', 'error')
         return redirect(url_for('auth.login'))

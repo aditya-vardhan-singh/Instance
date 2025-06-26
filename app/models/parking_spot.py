@@ -12,4 +12,4 @@ class ParkingSpot(db.Model):
     rate_per_hour = db.Column(db.Float, default=10.0)
 
     # One-to-one with reservation (optional)
-    reservation = db.relationship('Reservation', backref='spot', uselist=False)
+    record = db.relationship('ParkingRecord', backref='parking_record', uselist=False)

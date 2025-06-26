@@ -3,7 +3,7 @@ from .user import User
 from .admin import Admin
 from .parking_lot import ParkingLot
 from .parking_spot import ParkingSpot
-from .reservation import Reservation
+from .parking_record import ParkingRecord
 
 
 from app.models.user import User

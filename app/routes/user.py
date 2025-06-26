@@ -1,21 +1,55 @@
 from flask import Blueprint, render_template, session, redirect, url_for, request, flash
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.models import User, ParkingLot, ParkingSpot, ParkingRecord
 from app import db
+from collections import namedtuple
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
+
+# Define mock structure
+Lot = namedtuple('Lot', ['location'])
+Record = namedtuple('Record', ['id', 'lot', 'vehicle_no', 'start_time', 'status', 'spot_id', 'charge'])
 
 @user_bp.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
+
+    # Sample user
+    user = {
+        'id': 1,
+        'name': 'Aditya'
+    }
+
+    # Sample records
+    history = [
+        Record(
+            id=101,
+            lot=Lot(location='Chatori Gali'),
+            vehicle_no='UP32FZ0001',
+            start_time=datetime.now() - timedelta(hours=2),
+            status='parked',
+            spot_id='A303-126',
+            charge=None
+        ),
+        Record(
+            id=102,
+            lot=Lot(location='Cyber Hub'),
+            vehicle_no='DL8CAF7865',
+            start_time=datetime.now() - timedelta(days=1, hours=3),
+            status='released',
+            spot_id='A404-011',
+            charge=40.00
+        )
+    ]
     
-    user = User.query.get(session['user_id'])
-    history = ParkingRecord.query.filter_by(user_id=user.id).order_by(ParkingRecord.start_time.desc()).all()
-
-    return render_template('user_home.html', user=user, history=history, parking_lots=None)
-
+    return render_template(
+        'user_home.html',
+        user=user,
+        history=history,
+        parking_lots=None,
+    )
 
 @user_bp.route('/search')
 def search_parking():

@@ -21,4 +21,4 @@ def get_parking_summary(user_id, ParkingRecord):
     return summary
 
 def auto_allot_spot(ParkingSpot, lot_id):
-    return ParkingSpot.query.filter_by(lot_id=lot_id, is_available=True).first()
+    return ParkingSpot.query.filter_by(id=lot_id, is_available=True).first()
