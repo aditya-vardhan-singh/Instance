@@ -1,0 +1,34 @@
+<div class="modal fade" id="spotModal-{{ spot.id }}" tabindex="-1" aria-labelledby="spotModalLabel-{{ spot.id }}" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="spotModalLabel-{{ spot.id }}">Parking Spot #{{ spot.id }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <p><strong>Status:</strong> {% if spot.is_available %}Available (A){% else %}Occupied (O){% endif %}</p>
+
+        {% if spot.is_available %}
+          <p class="text-muted">This spot is currently available.</p>
+        {% else %}
+          <div class="border rounded p-2 bg-light">
+            <p><strong>Customer ID:</strong> {{ spot.record.user_id }}</p>
+            <p><strong>Vehicle Number:</strong> {{ spot.record.vehicle_number }}</p>
+            <p><strong>Parked At:</strong> {{ spot.record.start_time.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+            <p><strong>Estimated Cost:</strong> ₹{{ spot.record.estimated_cost }}</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="modal-footer">
+        {% if spot.is_available %}
+          <form method="POST" action="{{ url_for('admin.delete_spot', spot_id=spot.id) }}">
+            <button type="submit" class="btn btn-danger">Delete</button>
+          </form>
+        {% endif %}
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

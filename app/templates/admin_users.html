@@ -1,0 +1,34 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<h3 class="mb-4">Registered Users</h3>
+
+{% if users %}
+  <div class="table-responsive">
+    <table class="table table-bordered table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Email</th>
+          <th>Full Name</th>
+          <th>Address</th>
+          <th>PIN Code</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.fullname }}</td>
+          <td>{{ user.address }}</td>
+          <td>{{ user.pin }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="text-muted">No users registered yet.</p>
+{% endif %}
+{% endblock %}

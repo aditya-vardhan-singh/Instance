@@ -1,0 +1,83 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<h3 class="mb-4">Search</h3>
+
+<form method="GET" action="{{ url_for('admin.search') }}" class="row g-3 mb-4">
+  <div class="col-md-3">
+    <label for="search_by" class="form-label">Search By</label>
+    <select class="form-select" id="search_by" name="search_by" required>
+      <option value="" disabled selected>Select Option</option>
+      <option value="user_id">User ID</option>
+      <option value="parking_lot">Parking Lot Name</option>
+      <option value="parking_spot">Parking Spot ID</option>
+    </select>
+  </div>
+  <div class="col-md-6">
+    <label for="query" class="form-label">Search String</label>
+    <input type="text" class="form-control" id="query" name="query" placeholder="Enter search value" required>
+  </div>
+  <div class="col-md-3 d-flex align-items-end">
+    <button type="submit" class="btn btn-primary w-100">Search</button>
+  </div>
+</form>
+
+{% if results %}
+  {% if search_by == 'user_id' %}
+    <h5>Results for User ID: {{ query }}</h5>
+    {% if results %}
+      <ul class="list-group">
+        {% for record in results %}
+        <li class="list-group-item">
+          Spot ID: {{ record.spot_id }} | Vehicle: {{ record.vehicle_number }} | Start Time: {{ record.start_time }} | Cost: ₹{{ record.estimated_cost or "Pending" }}
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No parking records found for this user.</p>
+    {% endif %}
+
+  {% elif search_by == 'parking_lot' %}
+    <h5>Results for Parking Lot: "{{ query }}"</h5>
+    {% for lot in results %}
+      <div class="card mt-3">
+        <div class="card-header bg-dark text-white d-flex justify-content-between">
+          <strong>{{ lot.name }}</strong>
+          <span>{{ lot.occupied_count }}/{{ lot.total_spots }} Occupied</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2">
+            {% for spot in lot.spots %}
+              <span class="badge {% if spot.is_available %}bg-success{% else %}bg-danger{% endif %} p-3">
+                {% if spot.is_available %}A{% else %}O{% endif %}
+              </span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-muted">No parking lots found.</p>
+    {% endfor %}
+
+  {% elif search_by == 'parking_spot' %}
+    <h5>Results for Parking Spot ID: {{ query }}</h5>
+    {% if results %}
+      <div class="card mt-3">
+        <div class="card-body">
+          <p><strong>Spot ID:</strong> {{ results.id }}</p>
+          <p><strong>Status:</strong> {% if results.is_available %}Available{% else %}Occupied{% endif %}</p>
+          {% if not results.is_available and results.record %}
+            <hr>
+            <p><strong>Vehicle Number:</strong> {{ results.record.vehicle_number }}</p>
+            <p><strong>User ID:</strong> {{ results.record.user_id }}</p>
+            <p><strong>Start Time:</strong> {{ results.record.start_time }}</p>
+            <p><strong>Estimated Cost:</strong> ₹{{ results.record.estimated_cost or "Pending" }}</p>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <p>No parking spot found with that ID.</p>
+    {% endif %}
+  {% endif %}
+{% endif %}
+{% endblock %}
