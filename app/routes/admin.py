@@ -1,79 +1,203 @@
 # app/routes/admin.py
-
-from flask import Blueprint, render_template, session, redirect, url_for
+from app.models import User, ParkingLot, ParkingSpot, ParkingRecord
+from app import db
+from flask import Blueprint, render_template, session, redirect, url_for,request,flash
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+
+# @admin_bp.route('/dashboard')
+# def admin_dashboard():
+#     if session.get('role') != 'admin':
+#         return redirect(url_for('auth.login'))
+    
+#     all_spots = [
+#         {"number": "A101", "level": "1", "is_occupied": True},
+#         {"number": "A102", "level": "1", "is_occupied": False},
+#         {"number": "B201", "level": "2", "is_occupied": True},
+#         {"number": "B202", "level": "2", "is_occupied": False},
+#         {"number": "C301", "level": "3", "is_occupied": False},
+#     ]
+
+#     from datetime import datetime, timedelta
+
+#     all_bookings = [
+#         {
+#             "user_email": "alice@example.com",
+#             "spot_number": "A101",
+#             "start_time": datetime.now() - timedelta(hours=2),
+#             "end_time": None  # Ongoing
+#         },
+#         {
+#             "user_email": "bob@example.com",
+#             "spot_number": "B201",
+#             "start_time": datetime.now() - timedelta(days=1, hours=3),
+#             "end_time": datetime.now() - timedelta(days=1)
+#         },
+#         {
+#             "user_email": "charlie@example.com",
+#             "spot_number": "A102",
+#             "start_time": datetime.now() - timedelta(days=2),
+#             "end_time": datetime.now() - timedelta(days=2, hours=-2)
+#         },
+#     ]
+    
+#     from datetime import datetime, timedelta
+
+#     # Fake data for 7 days
+#     today = datetime.today()
+#     daily_labels = [(today - timedelta(days=i)).strftime('%d %b') for i in reversed(range(7))]
+#     daily_counts = [2, 4, 1, 3, 0, 5, 6]  # Replace with real count logic
+
+#     daily_booking_data = {
+#         'labels': daily_labels,
+#         'counts': daily_counts
+#     }
+    
+#     analytics={
+#         'total_spots': 100,
+#         'occupied_spots': 30,
+#         'total_users': 50,
+#         'active_bookings': 20
+#     }
+
+    
+#     return render_template(
+#         'admin_dashboard.html',
+#         all_spots=all_spots,
+#         all_bookings=all_bookings,
+#         analytics=analytics,
+#         daily_booking_data=daily_booking_data
+#     )
+
 @admin_bp.route('/dashboard')
-def admin_dashboard():
-    if session.get('role') != 'admin':
-        return redirect(url_for('auth.login'))
-    
-    all_spots = [
-        {"number": "A101", "level": "1", "is_occupied": True},
-        {"number": "A102", "level": "1", "is_occupied": False},
-        {"number": "B201", "level": "2", "is_occupied": True},
-        {"number": "B202", "level": "2", "is_occupied": False},
-        {"number": "C301", "level": "3", "is_occupied": False},
-    ]
+def dashboard():
+    lots = ParkingLot.query.all()
+    parking_lots = []
 
-    from datetime import datetime, timedelta
+    for lot in lots:
+        spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
 
-    all_bookings = [
-        {
-            "user_email": "alice@example.com",
-            "spot_number": "A101",
-            "start_time": datetime.now() - timedelta(hours=2),
-            "end_time": None  # Ongoing
-        },
-        {
-            "user_email": "bob@example.com",
-            "spot_number": "B201",
-            "start_time": datetime.now() - timedelta(days=1, hours=3),
-            "end_time": datetime.now() - timedelta(days=1)
-        },
-        {
-            "user_email": "charlie@example.com",
-            "spot_number": "A102",
-            "start_time": datetime.now() - timedelta(days=2),
-            "end_time": datetime.now() - timedelta(days=2, hours=-2)
-        },
-    ]
-    
-    from datetime import datetime, timedelta
+        for spot in spots:
+            if not spot.is_available:
+                # Attach the active (not yet released) parking record
+                spot.record = ParkingRecord.query.filter_by(spot_id=spot.id, end_time=None).first()
+            else:
+                spot.record = None  # Optional: make it consistent
 
-    # Fake data for 7 days
-    today = datetime.today()
-    daily_labels = [(today - timedelta(days=i)).strftime('%d %b') for i in reversed(range(7))]
-    daily_counts = [2, 4, 1, 3, 0, 5, 6]  # Replace with real count logic
+        occupied = sum(1 for s in spots if not s.is_available)
 
-    daily_booking_data = {
-        'labels': daily_labels,
-        'counts': daily_counts
-    }
-    
-    analytics={
-        'total_spots': 100,
-        'occupied_spots': 30,
-        'total_users': 50,
-        'active_bookings': 20
-    }
+        parking_lots.append({
+            'id': lot.id,
+            'name': lot.name,
+            'spots': spots,
+            'occupied_count': occupied,
+            'total_spots': len(spots)
+        })
 
-    
+    return render_template('admin_dashboard.html', parking_lots=parking_lots)
+
+
+
+@admin_bp.route('/users')
+def users():
+    all_users = User.query.all()
+    return render_template('admin/users.html', users=all_users)
+
+
+@admin_bp.route('/search', methods=['GET'])
+def search():
+    search_by = request.args.get('search_by')
+    query = request.args.get('query')
+    results = None
+
+    if search_by and query:
+        if search_by == 'user_id':
+            results = ParkingRecord.query.filter_by(user_id=query).all()
+
+        elif search_by == 'parking_lot':
+            lots = ParkingLot.query.filter(ParkingLot.name.ilike(f"%{query}%")).all()
+            # Include spot stats like dashboard
+            results = []
+            for lot in lots:
+                spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
+                occupied = sum(1 for s in spots if not s.is_available)
+                lot.spots = spots
+                lot.occupied_count = occupied
+                lot.total_spots = len(spots)
+                results.append(lot)
+
+        elif search_by == 'parking_spot':
+            spot = ParkingSpot.query.filter_by(id=query).first()
+            if spot and not spot.is_available:
+                spot.record = ParkingRecord.query.filter_by(spot_id=spot.id, end_time=None).first()
+            results = spot
+
+    return render_template("admin/search.html", search_by=search_by, query=query, results=results)
+
+
+@admin_bp.route('/summary')
+def summary():
+    lots = ParkingLot.query.all()
+
+    labels = []
+    available_data = []
+    occupied_data = []
+    revenue_data = []
+
+    for lot in lots:
+        spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
+        spot_ids = [s.id for s in spots]
+
+        # Stats
+        total = len(spots)
+        occupied = sum(1 for s in spots if not s.is_available)
+        available = total - occupied
+
+        # Revenue from records
+        records = ParkingRecord.query.filter(ParkingRecord.spot_id.in_(spot_ids)).all()
+        total_revenue = sum((r.estimated_cost or 0) for r in records)
+        total_bookings = len(records)
+
+        # Append chart + revenue info
+        labels.append(lot.name)
+        available_data.append(available)
+        occupied_data.append(occupied)
+        revenue_data.append({
+            'name': lot.name,
+            'total_bookings': total_bookings,
+            'total_revenue': total_revenue
+        })
+
     return render_template(
-        'admin_dashboard.html',
-        all_spots=all_spots,
-        all_bookings=all_bookings,
-        analytics=analytics,
-        daily_booking_data=daily_booking_data
+        "admin/summary.html",
+        labels=labels,
+        available_data=available_data,
+        occupied_data=occupied_data,
+        revenue_data=revenue_data
     )
 
 
+@admin_bp.route('/edit/<int:lot_id>', methods=['POST'])
+def edit_lot(lot_id):
+    lot = ParkingLot.query.get_or_404(lot_id)
+    lot.name = request.form['name']
+    lot.address = request.form['address']
+    lot.pin = request.form['pin']
+    lot.rate = float(request.form['rate'])
+    lot.total_spots = int(request.form['max_spots'])
+    db.session.commit()
+    return redirect(url_for('admin.admin_dashboard'))
 
-@admin_bp.route('/add-spot')
-def add_spot():
-    return "<h1>Add spot</h1>"
 
-@admin_bp.route('/remove-spot')
-def remove_spot():
-    return "<h1>Remove spot</h1>"
+@admin_bp.route('/delete-spot/<int:spot_id>', methods=['POST'])
+def delete_spot(spot_id):
+    spot = ParkingSpot.query.get_or_404(spot_id)
+    if not spot.is_available:
+        flash("Cannot delete an occupied spot.", "danger")
+        return redirect(url_for('admin.admin_dashboard'))
+    
+    db.session.delete(spot)
+    db.session.commit()
+    flash("Parking spot deleted successfully.", "success")
+    return redirect(url_for('admin.admin_dashboard'))

@@ -1,0 +1,68 @@
+{% extends "admin_base.html" %}
+
+{% block content %}
+<h3 class="mb-4">Parking Summary</h3>
+
+<!-- Chart: Spot Availability -->
+<canvas id="parkingSummaryChart" width="600" height="300" class="mb-5"></canvas>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('parkingSummaryChart').getContext('2d');
+  const summaryChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: {{ labels | safe }},
+      datasets: [
+        {
+          label: 'Available Spots',
+          data: {{ available_data | safe }},
+          backgroundColor: 'rgba(75, 192, 192, 0.7)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        },
+        {
+          label: 'Occupied Spots',
+          data: {{ occupied_data | safe }},
+          backgroundColor: 'rgba(255, 99, 132, 0.7)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          stepSize: 1
+        }
+      }
+    }
+  });
+</script>
+
+<!-- Revenue Summary Table -->
+<h4 class="mt-5">💰 Revenue Summary</h4>
+<div class="table-responsive">
+  <table class="table table-bordered table-hover mt-3">
+    <thead class="table-dark">
+      <tr>
+        <th>Parking Lot</th>
+        <th>Total Bookings</th>
+        <th>Total Revenue (₹)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rev in revenue_data %}
+      <tr>
+        <td>{{ rev.name }}</td>
+        <td>{{ rev.total_bookings }}</td>
+        <td>₹{{ "%.2f"|format(rev.total_revenue or 0) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

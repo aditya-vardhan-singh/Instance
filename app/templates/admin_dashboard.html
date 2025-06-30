@@ -1,256 +1,168 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Admin Dashboard</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="bg-light">
-    <div class="container mt-5">
-      <h2 class="mb-4">Admin Dashboard</h2>
+{% extends "admin_base.html" %} {% block content %}
+<h3>Welcome, Admin!</h3>
 
-      <!-- Flash Messages -->
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %} {% for category, message in messages %}
-      <div
-        class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
-        role="alert"
+<!-- Parking Lots Overview -->
+{% for lot in parking_lots %}
+<div class="card mt-4 shadow-sm">
+  <div
+    class="card-header d-flex justify-content-between align-items-center bg-dark text-white"
+  >
+    <div>
+      <strong>Parking #{{ loop.index }} – {{ lot.name }}</strong><br />
+      <small class="text-light"
+        >({{ lot.occupied_count }}/{{ lot.total_spots }} Occupied)</small
       >
-        {{ message }}
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Close"
-        ></button>
-      </div>
-      {% endfor %} {% endif %} {% endwith %}
-
-      <!-- Actions -->
-      <div class="row g-4">
-        <!-- Add Parking Spot -->
-        <div class="col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">Add Parking Spot</h5>
-              <form method="POST" action="{{ url_for('admin.add_spot') }}">
-                <div class="mb-2">
-                  <input
-                    type="text"
-                    name="spot_number"
-                    class="form-control"
-                    placeholder="Spot Number"
-                    required
-                  />
-                </div>
-                <div class="mb-2">
-                  <input
-                    type="text"
-                    name="level"
-                    class="form-control"
-                    placeholder="Level"
-                    required
-                  />
-                </div>
-                <button type="submit" class="btn btn-success w-100">
-                  Add Spot
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-
-        <!-- Remove Parking Spot -->
-        <div class="col-md-6">
-          <div class="card shadow-sm">
-            <div class="card-body">
-              <h5 class="card-title">Remove Parking Spot</h5>
-              <form method="POST" action="{{ url_for('admin.remove_spot') }}">
-                <input
-                  type="text"
-                  name="spot_number"
-                  class="form-control mb-2"
-                  placeholder="Spot Number to Remove"
-                  required
-                />
-                <button type="submit" class="btn btn-danger w-100">
-                  Remove Spot
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Parking Spot Status -->
-      <div class="mt-5">
-        <h4>All Parking Spots</h4>
-        <div class="table-responsive">
-          <table class="table table-striped">
-            <thead class="table-dark">
-              <tr>
-                <th>Spot Number</th>
-                <th>Level</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for spot in all_spots %}
-              <tr>
-                <td>{{ spot.number }}</td>
-                <td>{{ spot.level }}</td>
-                <td>
-                  {% if spot.is_occupied %}
-                  <span class="badge bg-danger">Occupied</span>
-                  {% else %}
-                  <span class="badge bg-success">Available</span>
-                  {% endif %}
-                </td>
-              </tr>
-              {% else %}
-              <tr>
-                <td colspan="3" class="text-muted text-center">
-                  No parking spots found
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- User Bookings -->
-      <div class="mt-5">
-        <h4>All User Bookings</h4>
-        <div class="table-responsive">
-          <table class="table table-striped">
-            <thead class="table-dark">
-              <tr>
-                <th>User Email</th>
-                <th>Spot Number</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for booking in all_bookings %}
-              <tr>
-                <td>{{ booking.user_email }}</td>
-                <td>{{ booking.spot_number }}</td>
-                <td>{{ booking.start_time }}</td>
-                <td>{{ booking.end_time or 'Ongoing' }}</td>
-              </tr>
-              {% else %}
-              <tr>
-                <td colspan="4" class="text-muted text-center">
-                  No bookings found
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Basic Analytics -->
-      <div class="mt-5 mb-5">
-        <h4>System Analytics</h4>
-        <ul class="list-group">
-          <li class="list-group-item d-flex justify-content-between">
-            <span>Total Parking Spots</span>
-            <strong>{{ analytics.total_spots }}</strong>
-          </li>
-          <li class="list-group-item d-flex justify-content-between">
-            <span>Occupied Spots</span>
-            <strong>{{ analytics.occupied_spots }}</strong>
-          </li>
-          <li class="list-group-item d-flex justify-content-between">
-            <span>Total Users</span>
-            <strong>{{ analytics.total_users }}</strong>
-          </li>
-          <li class="list-group-item d-flex justify-content-between">
-            <span>Active Bookings</span>
-            <strong>{{ analytics.active_bookings }}</strong>
-          </li>
-        </ul>
-      </div>
     </div>
-
-    <!-- Chart Section -->
-    <div class="row mt-5">
-      <div class="col-md-6">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Parking Spot Usage</h5>
-            <canvas id="spotUsageChart"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="card shadow-sm">
-          <div class="card-body">
-            <h5 class="card-title">Daily Bookings (Last 7 Days)</h5>
-            <canvas id="dailyBookingChart"></canvas>
-          </div>
-        </div>
-      </div>
+    <div>
+      <button
+        class="btn btn-warning btn-sm"
+        data-bs-toggle="modal"
+        data-bs-target="#editLotModal-{{ lot.id }}"
+      >
+        Edit
+      </button>
+      <a
+        href="{{ url_for('admin.delete_lot', lot_id=lot.id) }}"
+        class="btn btn-danger btn-sm"
+        >Delete</a
+      >
     </div>
+  </div>
+  <div class="card-body">
+    <!-- Spot Grid -->
+    <div class="d-flex flex-wrap gap-2">
+      {% for spot in lot.spots %}
+      <span
+        class="badge {% if spot.is_available %}bg-success{% else %}bg-danger{% endif %} p-3"
+        role="button"
+        data-bs-toggle="modal"
+        data-bs-target="#spotModal-{{ spot.id }}"
+      >
+        {% if spot.is_available %}A{% else %}O{% endif %}
+      </span>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-      // Data from Jinja
-      const occupiedSpots = {{ analytics.occupied_spots }};
-      const totalSpots = {{ analytics.total_spots }};
-      const availableSpots = totalSpots - occupiedSpots;
+      <!-- 🔽 Include modal per spot -->
+      {% include "admin/partials/spot_modal.html" %} {% endfor %}
+    </div>
+  </div>
+</div>
 
-      const dailyLabels = {{ daily_booking_data.labels | tojson }};
-      const dailyCounts = {{ daily_booking_data.counts | tojson }};
+<!-- 👇 Include Edit Modal for this lot -->
+{% include "admin/partials/edit_lot.html" %} {% else %}
+<p class="mt-4 text-muted">No parking lots added yet.</p>
+{% endfor %}
 
-      // Doughnut Chart: Spot Usage
-      new Chart(document.getElementById('spotUsageChart'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Occupied', 'Available'],
-          datasets: [{
-            data: [occupiedSpots, availableSpots],
-            backgroundColor: ['#dc3545', '#198754'], // red & green
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { position: 'bottom' }
-          }
-        }
-      });
+<!-- Add Lot Button -->
+<div class="d-flex justify-content-end mt-4">
+  <button
+    class="btn btn-primary"
+    data-bs-toggle="modal"
+    data-bs-target="#addLotModal"
+  >
+    + Add Parking Lot
+  </button>
+</div>
 
-      // Bar Chart: Daily Bookings
-      new Chart(document.getElementById('dailyBookingChart'), {
-        type: 'bar',
-        data: {
-          labels: dailyLabels,
-          datasets: [{
-            label: 'Bookings',
-            data: dailyCounts,
-            backgroundColor: '#0d6efd' // bootstrap primary
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: { beginAtZero: true }
-          }
-        }
-      });
-    </script>
-  </body>
-</html>
+{% endblock %}
+
+<!-- Add Lot Button -->
+<div class="d-flex justify-content-end mt-4">
+  <button
+    class="btn btn-primary"
+    data-bs-toggle="modal"
+    data-bs-target="#addLotModal"
+  >
+    + Add Parking Lot
+  </button>
+</div>
+{% endblock %}
+
+<!-- Add Lot Modal -->
+<div
+  class="modal fade"
+  id="addLotModal"
+  tabindex="-1"
+  aria-labelledby="addLotModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('admin.add_lot') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addLotModalLabel">New Parking Lot</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Prime Location Name</label>
+            <input
+              type="text"
+              class="form-control"
+              name="name"
+              placeholder="e.g. Cyber Hub"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Address</label>
+            <input
+              type="text"
+              class="form-control"
+              name="address"
+              placeholder="Full address"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">PIN Code</label>
+            <input
+              type="text"
+              class="form-control"
+              name="pin"
+              placeholder="6-digit PIN"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Price (per hour in ₹)</label>
+            <input
+              type="number"
+              step="0.01"
+              class="form-control"
+              name="rate"
+              placeholder="e.g. 30"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Maximum Spots</label>
+            <input
+              type="number"
+              class="form-control"
+              name="max_spots"
+              placeholder="e.g. 20"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success">Add Lot</button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
