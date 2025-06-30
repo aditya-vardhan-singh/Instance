@@ -7,7 +7,9 @@ class ParkingLot(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(150), nullable=False)
+    address = db.Column(db.String(150), nullable=False)
+    pin = db.Column(db.Integer, nullable=True)
+    rate = db.Column(db.Integer, nullable=False)
 
     # One-to-many relationship
     spots = db.relationship('ParkingSpot', backref='lot', lazy=True)

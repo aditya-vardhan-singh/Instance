@@ -40,7 +40,7 @@ def create_app() -> Flask:
         from app.models.user import User                           # noqa: E402
 
         # Credentials come from env vars with safe defaults
-        admin_email = os.environ.get("APP_ADMIN_EMAIL", "admin@example.com")
+        admin_email = os.environ.get("APP_ADMIN_EMAIL", "admin@gmail.com")
         admin_pass  = os.environ.get("APP_ADMIN_PASSWORD", "admin123")
 
         # Only create if an admin with that e-mail doesn't exist

@@ -70,8 +70,12 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 #         daily_booking_data=daily_booking_data
 #     )
 
-@admin_bp.route('/dashboard')
-def dashboard():
+@admin_bp.route('/base')
+def base():
+    return render_template('admin_base.html')
+
+@admin_bp.route('/')
+def home():
     lots = ParkingLot.query.all()
     parking_lots = []
 
@@ -95,14 +99,14 @@ def dashboard():
             'total_spots': len(spots)
         })
 
-    return render_template('admin_dashboard.html', parking_lots=parking_lots)
+    return render_template('admin_home.html', parking_lots=parking_lots)
 
 
 
 @admin_bp.route('/users')
 def users():
     all_users = User.query.all()
-    return render_template('admin/users.html', users=all_users)
+    return render_template('admin_users.html', users=all_users)
 
 
 @admin_bp.route('/search', methods=['GET'])
@@ -133,7 +137,7 @@ def search():
                 spot.record = ParkingRecord.query.filter_by(spot_id=spot.id, end_time=None).first()
             results = spot
 
-    return render_template("admin/search.html", search_by=search_by, query=query, results=results)
+    return render_template("admin_search.html", search_by=search_by, query=query, results=results)
 
 
 @admin_bp.route('/summary')
@@ -170,7 +174,7 @@ def summary():
         })
 
     return render_template(
-        "admin/summary.html",
+        "admin_summary.html",
         labels=labels,
         available_data=available_data,
         occupied_data=occupied_data,
@@ -187,7 +191,37 @@ def edit_lot(lot_id):
     lot.rate = float(request.form['rate'])
     lot.total_spots = int(request.form['max_spots'])
     db.session.commit()
-    return redirect(url_for('admin.admin_dashboard'))
+    return redirect(url_for('admin.home'))
+
+@admin_bp.route('/add', methods=['POST'])
+def add_lot():
+    if session.get('role') != 'admin':
+        return redirect(url_for('auth.login'))
+
+    # Extract form data
+    name = request.form.get('name')
+    address = request.form.get('address')
+    pin = request.form.get('pin')
+    rate = float(request.form.get('rate'))
+    max_spots = int(request.form.get('max_spots'))
+
+    # Step 1: Create the Parking Lot
+    new_lot = ParkingLot(name=name, address=address, pin=pin, rate=rate)
+    db.session.add(new_lot)
+    db.session.commit()
+
+    # Step 2: Auto-create empty parking spots
+    for i in range(1, max_spots + 1):
+        spot = ParkingSpot(
+            lot_id=new_lot.id,
+            spot_number=f"S{i:03}",  # Format like S001, S002...
+            is_available=True
+        )
+        db.session.add(spot)
+
+    db.session.commit()
+    flash("Parking lot added successfully with empty spots.", "success")
+    return redirect(url_for('admin.home'))
 
 
 @admin_bp.route('/delete-spot/<int:spot_id>', methods=['POST'])
@@ -195,9 +229,9 @@ def delete_spot(spot_id):
     spot = ParkingSpot.query.get_or_404(spot_id)
     if not spot.is_available:
         flash("Cannot delete an occupied spot.", "danger")
-        return redirect(url_for('admin.admin_dashboard'))
+        return redirect(url_for('admin.home'))
     
     db.session.delete(spot)
     db.session.commit()
     flash("Parking spot deleted successfully.", "success")
-    return redirect(url_for('admin.admin_dashboard'))
+    return redirect(url_for('admin.home'))
