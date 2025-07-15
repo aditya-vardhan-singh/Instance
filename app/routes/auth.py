@@ -38,7 +38,7 @@ def login():
             session['role'] = user.role
 
             if user.role == 'admin':
-                return redirect(url_for('admin.base'))  # You need to define this route
+                return redirect(url_for('admin.home'))  # You need to define this route
             else:
                 return redirect(url_for('user.dashboard'))
 
