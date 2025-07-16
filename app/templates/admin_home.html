@@ -38,10 +38,48 @@
       {% endfor %}
     </div>
   </div>
-</div>
 
-<!-- Edit Lot Modal -->
-{% include "./edit_lot.html" %}
+  <!-- Edit Lot Modal (moved inside loop!) -->
+  <div class="modal fade" id="editLotModal-{{ lot.id }}" tabindex="-1" aria-labelledby="editLotModalLabel-{{ lot.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+      <form method="POST" action="{{ url_for('admin.edit_lot', lot_id=lot.id) }}">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editLotModalLabel-{{ lot.id }}">Edit Parking Lot</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>Debug:</strong> Name = {{ lot.name  }}, Address = {{ lot.address }}, Rate={{lot.rate}}</p>
+            <div class="mb-3">
+              <label class="form-label">Location Name</label>
+              <input type="text" class="form-control" name="name" value="{{ lot.name }}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Address</label>
+              <input type="text" class="form-control" name="address" value="{{ lot.address}}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">PIN Code</label>
+              <input type="text" class="form-control" name="pin" value="{{ lot.pin }}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Rate (₹/hour)</label>
+              <input type="number" class="form-control" name="rate" step="0.01" value="{{ lot.rate }}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Max Spots</label>
+              <input type="number" class="form-control" name="max_spots" value="{{ lot.total_spots }}" required>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save Changes</button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 {% else %}
 <p class="mt-4 text-muted">No parking lots added yet.</p>
 {% endfor %}
@@ -57,8 +95,6 @@
 <div class="modal fade" id="addLotModal" tabindex="-1" aria-labelledby="addLotModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <form method="POST" action="{{ url_for('admin.add_lot') }}">
-      <!-- Optional CSRF token if using Flask-WTF -->
-      {# {{ csrf_token() }} #}
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="addLotModalLabel">New Parking Lot</h5>
