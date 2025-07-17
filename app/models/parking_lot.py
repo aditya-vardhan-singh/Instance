@@ -12,4 +12,4 @@ class ParkingLot(db.Model):
     rate = db.Column(db.Integer, nullable=False)
 
     # One-to-many relationship
-    spots = db.relationship('ParkingSpot', backref='lot', lazy=True)
+    spots = db.relationship('ParkingSpot', backref='lot', lazy=True, cascade='all, delete-orphan')

@@ -13,3 +13,5 @@ class ParkingRecord(db.Model):
     end_time = db.Column(db.DateTime, nullable=True)
     status = db.Column(db.String(20), default='parked')  # parked or released
     charge = db.Column(db.Float, default=0.0)
+    
+    lot = db.relationship('ParkingLot', backref='records')

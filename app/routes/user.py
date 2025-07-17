@@ -7,10 +7,6 @@ from collections import namedtuple
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 
-# Define mock structure
-Lot = namedtuple('Lot', ['location'])
-Record = namedtuple('Record', ['id', 'lot', 'vehicle_no', 'start_time', 'status', 'spot_id', 'charge'])
-
 @user_bp.route('/dashboard')
 def dashboard():
     if session.get('role') != 'user':
@@ -27,72 +23,66 @@ def dashboard():
 
     return render_template('user_home.html', user=user, history=history, parking_lots=None, search_location=None)
 
-
-# @user_bp.route('/dashboard')
-# def dashboard():
-#     if 'user_id' not in session:
-#         return redirect(url_for('auth.login'))
-
-#     # Sample user
-#     user = {
-#         'id': 1,
-#         'name': 'Aditya'
-#     }
-
-#     # Sample records
-#     history = [
-#         Record(
-#             id=101,
-#             lot=Lot(location='Chatori Gali'),
-#             vehicle_no='UP32FZ0001',
-#             start_time=datetime.now() - timedelta(hours=2),
-#             status='parked',
-#             spot_id='A303-126',
-#             charge=None
-#         ),
-#         Record(
-#             id=102,
-#             lot=Lot(location='Cyber Hub'),
-#             vehicle_no='DL8CAF7865',
-#             start_time=datetime.now() - timedelta(days=1, hours=3),
-#             status='released',
-#             spot_id='A404-011',
-#             charge=40.00
-#         )
-#     ]
-    
-#     return render_template(
-#         'user_home.html',
-#         user=user,
-#         history=history,
-#         parking_lots=None,
-#     )
-
-# @user_bp.route('/search')
-# def search_parking():
-#     if 'user_id' not in session:
-#         return redirect(url_for('auth.login'))
-    
-#     location = request.args.get('location')
-#     user = User.query.get(session['user_id'])
-#     history = ParkingRecord.query.filter_by(user_id=user.id).order_by(ParkingRecord.start_time.desc()).all()
-    
-#     parking_lots = ParkingLot.query.filter(ParkingLot.location.ilike(f'%{location}%')).all()
-
-#     return render_template('user_home.html', user=user, history=history, parking_lots=parking_lots, search_location=location)
-
 @user_bp.route('/search', methods=['GET'])
 def search_parking():
-    location = request.args.get('location')
+    location = request.args.get('name')
     user_id = session.get('user_id')
     user = User.query.get(user_id)
 
-    parking_lots = ParkingLot.query.filter(ParkingLot.location.ilike(f"%{location}%")).all()
+    parking_lots = ParkingLot.query.filter(ParkingLot.address.ilike(f"%{location}%")).all()
+
+    # Dynamically attach available spot count
+    for lot in parking_lots:
+        lot.available_spots = ParkingSpot.query.filter_by(lot_id=lot.id, is_available=True).count()
 
     history = ParkingRecord.query.filter_by(user_id=user_id).order_by(ParkingRecord.start_time.desc()).all()
 
     return render_template('user_home.html', user=user, history=history,
                            parking_lots=parking_lots, search_location=location)
+    
+    
+@user_bp.route('/available_spot/<int:lot_id>')
+def available_spot(lot_id):
+    spot = ParkingSpot.query.filter_by(lot_id=lot_id, status='available').first()
+    if spot:
+        return jsonify({'spot_id': spot.id})
+    return jsonify({'spot_id': None})
+    
+
+@user_bp.route('/reserve_spot', methods=['POST'])
+def reserve_spot():
+    spot_id = request.form.get('spot_id')
+    lot_id = request.form.get('lot_id')
+    user_id = request.form.get('user_id')
+    vehicle_no = request.form.get('vehicle_no')
+
+    spot = ParkingSpot.query.get(spot_id)
+    if not spot or not spot.is_available:
+        flash('Spot is not available. Please try another one.', 'danger')
+        return redirect(url_for('user.dashboard'))
+
+    # Create new parking record
+    new_record = ParkingRecord(
+        user_id=user_id,
+        lot_id=lot_id,
+        spot_id=spot_id,
+        vehicle_no=vehicle_no,
+        status='parked'
+    )
+    
+    print('Spot ID:', spot_id)
+    print('Spot exists:', bool(spot))
+    print('Is available:', spot.is_available if spot else 'N/A')
+
+
+    # Mark the spot as unavailable
+    spot.is_available = False
+
+    db.session.add(new_record)
+    db.session.commit()
+
+    flash('Parking spot reserved successfully!', 'success')
+    return redirect(url_for('user_home.html'))
 
 
 @user_bp.route('/book/<int:lot_id>', methods=['POST'])
