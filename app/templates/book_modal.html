@@ -1,0 +1,36 @@
+<div class="modal fade" id="bookModal" tabindex="-1" aria-labelledby="bookModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" action="{{ url_for('user.reserve_spot') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="bookModalLabel">Reserve Parking Spot</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Hidden Fields -->
+          <input type="hidden" name="lot_id" id="modalLotId">
+          <input type="hidden" name="user_id" id="modalUserId">
+          <input type="hidden" name="spot_id" id="modalSpotId">
+
+          <!-- Prefilled & Visible Info -->
+          <p><strong>Lot ID:</strong> <span id="displayLotId"></span></p>
+          <p><strong>Lot Name:</strong> <span id="modalLotName"></span></p>
+          <p><strong>User ID:</strong> <span id="displayUserId"></span></p>
+          <p><strong>Spot ID:</strong> <span id="displaySpotId"></span></p>
+
+          <!-- Vehicle Number Input -->
+          <div class="mb-3">
+            <label for="vehicle_no" class="form-label">Vehicle Number</label>
+            <input type="text" class="form-control" name="vehicle_no" id="vehicle_no" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Reserve</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
