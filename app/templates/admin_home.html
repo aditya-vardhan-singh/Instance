@@ -1,23 +1,34 @@
-{% extends "admin_base.html" %}
-
-{% block content %}
+{% extends "admin_base.html" %} {% block content %}
 <h3>Welcome, Admin!</h3>
 
 <!-- Parking Lots Overview -->
 {% for lot in parking_lots %}
 <div class="card mt-4 shadow-sm">
-  <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
+  <div
+    class="card-header d-flex justify-content-between align-items-center bg-dark text-white"
+  >
     <div>
       <strong>Parking #{{ loop.index }} – {{ lot.name }}</strong><br />
-      <small class="text-light">({{ lot.occupied_count }}/{{ lot.total_spots }} Occupied)</small>
+      <small class="text-light"
+        >({{ lot.occupied_count }}/{{ lot.total_spots }} Occupied)</small
+      >
     </div>
     <div>
-      <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editLotModal-{{ lot.id }}">
+      <button
+        class="btn btn-warning btn-sm"
+        data-bs-toggle="modal"
+        data-bs-target="#editLotModal-{{ lot.id }}"
+      >
         Edit
       </button>
-      <a href="{{ url_for('admin.delete_spot', spot_id=lot.id) }}" class="btn btn-danger btn-sm">
-        Delete
-      </a>
+      <form
+        method="POST"
+        action="{{ url_for('admin.delete_lot', lot_id=lot.id) }}"
+        style="display: inline"
+        onsubmit="return confirm('Are you sure you want to delete this lot?');"
+      >
+        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+      </form>
     </div>
   </div>
   <div class="card-body">
@@ -34,61 +45,204 @@
       </span>
 
       <!-- Spot Modal -->
-      {% include "./spot_modal.html" %}
-      {% endfor %}
+      {% include "./spot_modal.html" %} {% endfor %}
+    </div>
+  </div>
+
+  <!-- Edit Lot Modal (moved inside loop!) -->
+  <div
+    class="modal fade"
+    id="editLotModal-{{ lot.id }}"
+    tabindex="-1"
+    aria-labelledby="editLotModalLabel-{{ lot.id }}"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <form
+        method="POST"
+        action="{{ url_for('admin.edit_lot', lot_id=lot.id) }}"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="editLotModalLabel-{{ lot.id }}">
+              Edit Parking Lot
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>
+              <strong>Debug:</strong> Name = {{ lot.name }}, Address = {{
+              lot.address }}, Rate={{lot.rate}}
+            </p>
+            <div class="mb-3">
+              <label class="form-label">Location Name</label>
+              <input
+                type="text"
+                class="form-control"
+                name="name"
+                value="{{ lot.name }}"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Address</label>
+              <input
+                type="text"
+                class="form-control"
+                name="address"
+                value="{{ lot.address}}"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">PIN Code</label>
+              <input
+                type="text"
+                class="form-control"
+                name="pin"
+                value="{{ lot.pin }}"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Rate (₹/hour)</label>
+              <input
+                type="number"
+                class="form-control"
+                name="rate"
+                step="0.01"
+                value="{{ lot.rate }}"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Max Spots</label>
+              <input
+                type="number"
+                class="form-control"
+                name="max_spots"
+                value="{{ lot.total_spots }}"
+                required
+              />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="submit" class="btn btn-success">Save Changes</button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 </div>
-
-<!-- Edit Lot Modal -->
-{% include "./edit_lot.html" %}
 {% else %}
 <p class="mt-4 text-muted">No parking lots added yet.</p>
 {% endfor %}
 
 <!-- Add Lot Button -->
 <div class="d-flex justify-content-end mt-4">
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLotModal">
+  <button
+    class="btn btn-primary"
+    data-bs-toggle="modal"
+    data-bs-target="#addLotModal"
+  >
     + Add Parking Lot
   </button>
 </div>
 
 <!-- Add Lot Modal -->
-<div class="modal fade" id="addLotModal" tabindex="-1" aria-labelledby="addLotModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="addLotModal"
+  tabindex="-1"
+  aria-labelledby="addLotModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <form method="POST" action="{{ url_for('admin.add_lot') }}">
-      <!-- Optional CSRF token if using Flask-WTF -->
-      {# {{ csrf_token() }} #}
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title" id="addLotModalLabel">New Parking Lot</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label">Prime Location Name</label>
-            <input type="text" class="form-control" name="name" placeholder="e.g. Cyber Hub" required />
+            <input
+              type="text"
+              class="form-control"
+              name="name"
+              placeholder="e.g. Cyber Hub"
+              required
+            />
           </div>
           <div class="mb-3">
             <label class="form-label">Address</label>
-            <input type="text" class="form-control" name="address" placeholder="Full address" required />
+            <input
+              type="text"
+              class="form-control"
+              name="address"
+              placeholder="Full address"
+              required
+            />
           </div>
           <div class="mb-3">
             <label class="form-label">PIN Code</label>
-            <input type="text" class="form-control" name="pin" placeholder="6-digit PIN" required />
+            <input
+              type="text"
+              class="form-control"
+              name="pin"
+              placeholder="6-digit PIN"
+              required
+            />
           </div>
           <div class="mb-3">
             <label class="form-label">Price (per hour in ₹)</label>
-            <input type="number" step="0.01" class="form-control" name="rate" placeholder="e.g. 30" required />
+            <input
+              type="number"
+              step="0.01"
+              class="form-control"
+              name="rate"
+              placeholder="e.g. 30"
+              required
+            />
           </div>
           <div class="mb-3">
             <label class="form-label">Maximum Spots</label>
-            <input type="number" class="form-control" name="max_spots" placeholder="e.g. 20" required />
+            <input
+              type="number"
+              class="form-control"
+              name="max_spots"
+              placeholder="e.g. 20"
+              required
+            />
           </div>
         </div>
         <div class="modal-footer">
           <button type="submit" class="btn btn-success">Add Lot</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     </form>
@@ -97,11 +251,13 @@
 
 <!-- Optional: Bootstrap tooltip initialization -->
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'))
+  document.addEventListener("DOMContentLoaded", function () {
+    var tooltipTriggerList = [].slice.call(
+      document.querySelectorAll("[title]")
+    );
     tooltipTriggerList.forEach(function (el) {
-      new bootstrap.Tooltip(el)
-    })
+      new bootstrap.Tooltip(el);
+    });
   });
 </script>
 

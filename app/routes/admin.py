@@ -5,74 +5,11 @@ from flask import Blueprint, render_template, session, redirect, url_for,request
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-
-# @admin_bp.route('/dashboard')
-# def admin_dashboard():
-#     if session.get('role') != 'admin':
-#         return redirect(url_for('auth.login'))
-    
-#     all_spots = [
-#         {"number": "A101", "level": "1", "is_occupied": True},
-#         {"number": "A102", "level": "1", "is_occupied": False},
-#         {"number": "B201", "level": "2", "is_occupied": True},
-#         {"number": "B202", "level": "2", "is_occupied": False},
-#         {"number": "C301", "level": "3", "is_occupied": False},
-#     ]
-
-#     from datetime import datetime, timedelta
-
-#     all_bookings = [
-#         {
-#             "user_email": "alice@example.com",
-#             "spot_number": "A101",
-#             "start_time": datetime.now() - timedelta(hours=2),
-#             "end_time": None  # Ongoing
-#         },
-#         {
-#             "user_email": "bob@example.com",
-#             "spot_number": "B201",
-#             "start_time": datetime.now() - timedelta(days=1, hours=3),
-#             "end_time": datetime.now() - timedelta(days=1)
-#         },
-#         {
-#             "user_email": "charlie@example.com",
-#             "spot_number": "A102",
-#             "start_time": datetime.now() - timedelta(days=2),
-#             "end_time": datetime.now() - timedelta(days=2, hours=-2)
-#         },
-#     ]
-    
-#     from datetime import datetime, timedelta
-
-#     # Fake data for 7 days
-#     today = datetime.today()
-#     daily_labels = [(today - timedelta(days=i)).strftime('%d %b') for i in reversed(range(7))]
-#     daily_counts = [2, 4, 1, 3, 0, 5, 6]  # Replace with real count logic
-
-#     daily_booking_data = {
-#         'labels': daily_labels,
-#         'counts': daily_counts
-#     }
-    
-#     analytics={
-#         'total_spots': 100,
-#         'occupied_spots': 30,
-#         'total_users': 50,
-#         'active_bookings': 20
-#     }
-
-    
-#     return render_template(
-#         'admin_dashboard.html',
-#         all_spots=all_spots,
-#         all_bookings=all_bookings,
-#         analytics=analytics,
-#         daily_booking_data=daily_booking_data
-#     )
-
 @admin_bp.route('/base')
 def base():
     return render_template('admin_base.html')
+
+
 
 @admin_bp.route('/')
 def home():
@@ -80,26 +17,27 @@ def home():
     parking_lots = []
 
     for lot in lots:
+        # Get all spots related to this lot
         spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
 
+        # Add parking record reference if the spot is occupied
         for spot in spots:
             if not spot.is_available:
-                # Attach the active (not yet released) parking record
                 spot.record = ParkingRecord.query.filter_by(spot_id=spot.id, end_time=None).first()
             else:
-                spot.record = None  # Optional: make it consistent
+                spot.record = None
 
-        occupied = sum(1 for s in spots if not s.is_available)
+        # Add extra computed values directly to the model
+        lot.spots = spots
+        lot.occupied_count = sum(1 for s in spots if not s.is_available)
+        lot.total_spots = len(spots)
 
-        parking_lots.append({
-            'id': lot.id,
-            'name': lot.name,
-            'spots': spots,
-            'occupied_count': occupied,
-            'total_spots': len(spots)
-        })
+        # Append the full lot object
+        parking_lots.append(lot)
 
     return render_template('admin_home.html', parking_lots=parking_lots)
+
+
 
 
 
@@ -185,13 +123,52 @@ def summary():
 @admin_bp.route('/edit/<int:lot_id>', methods=['POST'])
 def edit_lot(lot_id):
     lot = ParkingLot.query.get_or_404(lot_id)
-    lot.name = request.form['name']
-    lot.address = request.form['address']
-    lot.pin = request.form['pin']
-    lot.rate = float(request.form['rate'])
-    lot.total_spots = int(request.form['max_spots'])
+
+    # Get form values
+    new_name = request.form['name']
+    new_address = request.form['address']
+    new_pin = request.form['pin']
+    new_rate = float(request.form['rate'])
+    new_total_spots = int(request.form['max_spots'])
+
+    # Update basic fields
+    lot.name = new_name
+    lot.address = new_address
+    lot.pin = new_pin
+    lot.rate = new_rate
+
+    # Adjust parking spots
+    current_spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
+    current_count = len(current_spots)
+
+    if new_total_spots > current_count:
+        # Add new empty spots
+        for i in range(current_count + 1, new_total_spots + 1):
+            new_spot = ParkingSpot(
+                lot_id=lot.id,
+                spot_number=f"S{i:03}",
+                is_available=True
+            )
+            db.session.add(new_spot)
+    elif new_total_spots < current_count:
+        # Remove extra spots (only if available)
+        removable_spots = [s for s in current_spots if s.is_available]
+        to_remove = current_count - new_total_spots
+
+        if len(removable_spots) < to_remove:
+            flash("Cannot reduce max spots — too many spots are occupied.", "danger")
+            return redirect(url_for('admin.home'))
+
+        for spot in removable_spots[:to_remove]:
+            db.session.delete(spot)
+
+    # Finally update total_spots
+    lot.total_spots = new_total_spots
+
     db.session.commit()
+    flash("Parking lot updated successfully.", "success")
     return redirect(url_for('admin.home'))
+
 
 @admin_bp.route('/add', methods=['POST'])
 def add_lot():
@@ -224,14 +201,25 @@ def add_lot():
     return redirect(url_for('admin.home'))
 
 
+@admin_bp.route('/delete_lot/<int:lot_id>', methods=['POST'])
+def delete_lot(lot_id):
+    lot = ParkingLot.query.get_or_404(lot_id)
+
+    # Check for occupied spots (optional)
+    occupied = any(not spot.is_available for spot in lot.spots)
+    if occupied:
+        flash("Cannot delete lot with occupied spots.", "danger")
+        return redirect(url_for('admin.home'))
+
+    db.session.delete(lot)
+    db.session.commit()
+    flash("Parking lot deleted successfully.", "success")
+    return redirect(url_for('admin.home'))
+
+
 @admin_bp.route('/delete-spot/<int:spot_id>', methods=['POST'])
 def delete_spot(spot_id):
     spot = ParkingSpot.query.get_or_404(spot_id)
-    if not spot.is_available:
-        flash("Cannot delete an occupied spot.", "danger")
-        return redirect(url_for('admin.home'))
-    
     db.session.delete(spot)
     db.session.commit()
-    flash("Parking spot deleted successfully.", "success")
     return redirect(url_for('admin.home'))
