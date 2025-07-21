@@ -29,7 +29,7 @@
       <ul class="list-group">
         {% for record in results %}
         <li class="list-group-item">
-          Spot ID: {{ record.spot_id }} | Vehicle: {{ record.vehicle_number }} | Start Time: {{ record.start_time }} | Cost: ₹{{ record.estimated_cost or "Pending" }}
+          Spot ID: {{ record.spot_id }} | Vehicle: {{ record.vehicle_no }} | Start Time: {{ record.start_time }} | Cost: ₹{{ record.charge or "Pending" }}
         </li>
         {% endfor %}
       </ul>
@@ -68,10 +68,10 @@
           <p><strong>Status:</strong> {% if results.is_available %}Available{% else %}Occupied{% endif %}</p>
           {% if not results.is_available and results.record %}
             <hr>
-            <p><strong>Vehicle Number:</strong> {{ results.record.vehicle_number }}</p>
+            <p><strong>Vehicle Number:</strong> {{ results.record.vehicle_no }}</p>
             <p><strong>User ID:</strong> {{ results.record.user_id }}</p>
             <p><strong>Start Time:</strong> {{ results.record.start_time }}</p>
-            <p><strong>Estimated Cost:</strong> ₹{{ results.record.estimated_cost or "Pending" }}</p>
+            <p><strong>Estimated Cost:</strong> ₹{{ results.record.charge or "Pending" }}</p>
           {% endif %}
         </div>
       </div>

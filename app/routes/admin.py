@@ -5,11 +5,6 @@ from flask import Blueprint, render_template, session, redirect, url_for,request
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-@admin_bp.route('/base')
-def base():
-    return render_template('admin_base.html')
-
-
 
 @admin_bp.route('/')
 def home():
@@ -17,28 +12,16 @@ def home():
     parking_lots = []
 
     for lot in lots:
-        # Get all spots related to this lot
         spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
-
-        # Add parking record reference if the spot is occupied
         for spot in spots:
-            if not spot.is_available:
-                spot.record = ParkingRecord.query.filter_by(spot_id=spot.id, end_time=None).first()
-            else:
-                spot.record = None
-
-        # Add extra computed values directly to the model
+            # Find the latest active record for this spot
+            spot.record = ParkingRecord.query.filter_by(spot_id=spot.id, status='parked').first()
         lot.spots = spots
         lot.occupied_count = sum(1 for s in spots if not s.is_available)
         lot.total_spots = len(spots)
-
-        # Append the full lot object
         parking_lots.append(lot)
 
     return render_template('admin_home.html', parking_lots=parking_lots)
-
-
-
 
 
 @admin_bp.route('/users')
@@ -74,7 +57,6 @@ def search():
             if spot and not spot.is_available:
                 spot.record = ParkingRecord.query.filter_by(spot_id=spot.id, end_time=None).first()
             results = spot
-
     return render_template("admin_search.html", search_by=search_by, query=query, results=results)
 
 
@@ -98,7 +80,7 @@ def summary():
 
         # Revenue from records
         records = ParkingRecord.query.filter(ParkingRecord.spot_id.in_(spot_ids)).all()
-        total_revenue = sum((r.estimated_cost or 0) for r in records)
+        total_revenue = sum((r.charge or 0) for r in records)
         total_bookings = len(records)
 
         # Append chart + revenue info

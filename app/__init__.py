@@ -50,6 +50,8 @@ def create_app() -> Flask:
                 email=admin_email,
                 role="admin",
                 password_hash=generate_password_hash(admin_pass),
+                address="Gomti Nagar",
+                pin="200000"
             )
             db.session.add(admin)
             db.session.commit()

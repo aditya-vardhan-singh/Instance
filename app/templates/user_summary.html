@@ -1,33 +1,61 @@
-<!-- templates/user_summary.html -->
 {% extends "user_base.html" %}
 
 {% block content %}
-<h4>Your Parking Summary</h4>
-<canvas id="parkingChart" width="600" height="300" class="mt-4"></canvas>
+<h4 class="text-xl font-semibold mb-4">Your Parking Summary</h4>
+
+<div class="chart-container" style="position: relative; height:60vh; width:100%">
+    <canvas id="parkingChart"></canvas>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  const ctx = document.getElementById('parkingChart').getContext('2d');
-  const parkingChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: { ...chart_labels },
-      datasets: [{
-        label: 'Hours Parked per Day',
-        data: { ...chart_data },
-        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        y: {
-          beginAtZero: true
+  document.addEventListener("DOMContentLoaded", function () {
+    const ctx = document.getElementById('parkingChart').getContext('2d');
+    const chartLabels = {{ chart_labels | tojson | safe }};
+    const chartData = {{ chart_data | tojson | safe }};
+
+    const parkingChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: 'Hours Parked per Day',
+          data: chartData,
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Hours'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          title: {
+            display: true,
+            text: 'Daily Parking Summary'
+          }
         }
       }
-    }
+    });
   });
 </script>
 {% endblock %}
